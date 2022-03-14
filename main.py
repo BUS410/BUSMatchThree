@@ -4,7 +4,7 @@ import pygame
 
 WINDOW_TITLE = 'BUSMatchThree'
 FPS = 60
-SCREEN_WEIGHT, SCREEN_HEIGHT = 600, 600
+SCREEN_WEIGHT, SCREEN_HEIGHT = 700, 700
 
 
 class Element(pygame.sprite.Sprite):
@@ -18,8 +18,18 @@ class Element(pygame.sprite.Sprite):
 
 class Field(pygame.sprite.Group):
 
-    def __init__(self):
+    def __init__(self, size: int):
         pygame.sprite.Group.__init__(self)
+        self._table = [[None for _ in range(size)] for _ in range(size)]
+        self.element_size = SCREEN_HEIGHT // size
+
+    def add(self, *sprites):
+        pygame.sprite.Group.add(self, *sprites)
+        for sprite in sprites:
+            self._table[sprite.rect.y//self.element_size][sprite.rect.x//self.element_size] = sprite
+
+    def drop(self):
+        pass
 
 
 class Game:
@@ -43,7 +53,7 @@ class Game:
                 'images/java.png',
             )
         ]
-        self.elements = Field()
+        self.elements = Field(size)
         self.size = size
         self.selected_elements = []
         self.line_points = []
@@ -90,7 +100,7 @@ class Game:
             for x in range(0, SCREEN_HEIGHT, element_size):
                 self.elements.add(Element(x, y, random.choice(self.elements_images)))
 
-        pygame.mixer.music.play(-1)
+        # pygame.mixer.music.play(-1)
         while self.running:
             self.update()
             self.clock.tick(FPS)

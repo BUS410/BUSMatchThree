@@ -1,11 +1,11 @@
+import os
 import random
-import time
 
 import pygame
 
 WINDOW_TITLE = 'BUSMatchThree'
 FPS = 60
-SCREEN_WEIGHT, SCREEN_HEIGHT = 800, 600
+SCREEN_WEIGHT, SCREEN_HEIGHT = 600, 600
 
 
 class Element(pygame.sprite.Sprite):
@@ -16,23 +16,21 @@ class Element(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.topleft = x, y
 
+    def sub_rect(self):
+        border_size = self.rect.width // 10
+        return pygame.rect.Rect(self.rect.x + border_size, self.rect.y + border_size,
+                                self.rect.width - border_size * 2, self.rect.height - border_size * 2)
+
 
 class Field(pygame.sprite.Group):
 
     def __init__(self, size: int):
         pygame.sprite.Group.__init__(self)
-        self._table = [[None for _ in range(size)] for _ in range(size)]
+        self._table: list[list[Element | None]] = [[None for _ in range(size)] for _ in range(size)]
         self.element_size = SCREEN_HEIGHT // size
         self.elements_images = [
-            pygame.transform.scale(pygame.image.load(x), (SCREEN_HEIGHT // size, SCREEN_HEIGHT // size)) for x in (
-                'images/asm.png',
-                'images/js.png',
-                'images/python.png',
-                'images/cs.png',
-                'images/cpp.png',
-                'images/php.png',
-                'images/java.png',
-            )
+            pygame.transform.scale(pygame.image.load(f'images/{x}'),
+                                   (SCREEN_HEIGHT // size, SCREEN_HEIGHT // size)) for x in os.listdir('images')
         ]
 
     def create(self):
@@ -75,11 +73,8 @@ class Game:
     def __init__(self, size):
         pygame.init()
         pygame.mixer.init()
-        pygame.font.init()
-        self.font = pygame.font.SysFont('consolas', 26)
         pygame.mixer.music.load('audio/music.mp3')
         self.pop_sound = pygame.mixer.Sound('audio/pop.wav')
-        self.win_sound = pygame.mixer.Sound('audio/yes.wav')
         self.window = pygame.display.set_mode((SCREEN_WEIGHT, SCREEN_HEIGHT))
         pygame.display.set_caption(WINDOW_TITLE)
         self.running = True
@@ -90,10 +85,6 @@ class Game:
         self.line_points = []
         self.is_line_input = False
         self.score = 0
-        self.start_time = time.time()
-        self.record = 0
-        self.background_image = pygame.transform.scale(pygame.image.load('images/background.jpg'),
-                                                       (SCREEN_WEIGHT, SCREEN_HEIGHT))
 
     def update(self):
         for event in pygame.event.get():
@@ -120,7 +111,7 @@ class Game:
         if self.is_line_input:
             pos = pygame.mouse.get_pos()
             for el in self.field:
-                if el.rect.collidepoint(*pos):
+                if el.sub_rect().collidepoint(*pos):
                     center = el.rect.center
                     if center not in self.line_points:
                         self.line_points.append(center)
@@ -128,20 +119,12 @@ class Game:
                         self.selected_elements.append(el)
 
         self.field.update()
-        if self.score // 100 > self.record:
-            self.win_sound.play()
-            self.record = self.score // 100
 
-        self.window.blit(self.background_image, (0, 0))
+        self.window.fill((32, 32, 32))
         self.field.draw(self.window)
         if len(self.line_points) > 1:
             pygame.draw.lines(self.window, (255, 255, 255), False, self.line_points, 10)
-        self.window.blit(
-            self.font.render(f'{self.score} POINTS', True, (255, 255, 255)),
-            (SCREEN_HEIGHT + 20, 20))
-        self.window.blit(
-            self.font.render(f'{int(time.time() - self.start_time)} TIME', True, (255, 255, 255)),
-            (SCREEN_HEIGHT + 20, 60))
+        pygame.display.set_caption(f'{WINDOW_TITLE}.    Score: {self.score}')
         pygame.display.flip()
 
     def run(self):
